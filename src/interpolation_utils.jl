@@ -142,7 +142,7 @@ get_left(::LinearInterpolationDimension) = true
 
 get_idx_bounds(::AbstractInterpolationDimension) = (1, -1)
 function get_idx_bounds(itp_dim::BSplineInterpolationDimension)
-    (itp_dim.degree + 1, -itp_dim.degree - 1)
+    (degree(itp_dim) + 1, -degree(itp_dim) - 1)
 end
 
 get_idx_shift(::AbstractInterpolationDimension) = 0

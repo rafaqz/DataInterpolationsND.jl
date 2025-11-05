@@ -111,6 +111,7 @@ the BSpline basis functions.
   - `multiplicities`: The multiplicities of the knots `t`. Defaults to multiplicities for an open/clamped knot vector.
 """
 struct BSplineInterpolationDimension{
+    Degree,
     tType <: AbstractVector{<:Number},
     t_evalType <: AbstractVector{<:Number},
     idxType <: AbstractVector{<:Integer},
@@ -121,7 +122,6 @@ struct BSplineInterpolationDimension{
     knots_all::tType
     t_eval::t_evalType
     idx_eval::idxType
-    degree::Int
     max_derivative_order_eval::Int
     basis_function_eval::evalType
     multiplicities::mType
@@ -129,9 +129,9 @@ struct BSplineInterpolationDimension{
             t, knots_all, t_eval, idx_eval, degree, max_derivative_order_eval,
             basis_function_eval, multiplicities)
         validate_t(t)
-        new{typeof(t), typeof(t_eval), typeof(idx_eval),
+        new{degree, typeof(t), typeof(t_eval), typeof(idx_eval),
             typeof(basis_function_eval), typeof(multiplicities)}(
-            t, knots_all, t_eval, idx_eval, degree, max_derivative_order_eval,
+            t, knots_all, t_eval, idx_eval, max_derivative_order_eval,
             basis_function_eval, multiplicities)
     end
 end
@@ -174,3 +174,5 @@ function BSplineInterpolationDimension(
     set_basis_function_eval!(itp_dim)
     itp_dim
 end
+
+degree(::BSplineInterpolationDimension{D}) where D = D

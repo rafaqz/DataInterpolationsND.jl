@@ -180,9 +180,23 @@ end
     itp_dims = (
         NoInterpolationDimension(),
         LinearInterpolationDimension(t2; t_eval = t2),
+        # LinearInterpolationDimension(t3; t_eval = t3),
         BSplineInterpolationDimension(t3, 1; t_eval = t3)
     )
     itp = NDInterpolation(u, itp_dims)
+    f(itp, n) = for i in 1:n itp(1.0, 4.0) end
+    using Cthulhu
+    using ProfileView
+    using BenchmarkTools
+    descend_clicked()
+    @profview f(itp, 10000000)
+    itp(1.0, 4.0)
+    @btime $itp(1.0, 4.0)
+    @descend itp(1.0, 4.0)
     @test isapprox(itp(1.0, 4.0), [1.0, 1.0, 1.0])
+
+    out = zeros(5)
+
+    dump(:(out .= product111 .* u[index111...] .+ product121 .* u[index121...] .+ product112 .* u[index112...] .+ product122 .* u[index122...]))
     eval_grid(itp)
 end

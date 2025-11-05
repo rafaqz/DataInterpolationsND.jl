@@ -32,7 +32,7 @@ struct NDInterpolation{
     u::uType
     interp_dims::D
     cache::gType
-    function NDInterpolation(u::AbstractArray{<:Any, N}, interp_dims, cache) where {N}
+    function NDInterpolation(u::AbstractArray{<:Any, N}, interp_dims::Tuple, cache) where {N}
         if interp_dims isa AbstractInterpolationDimension
             interp_dims = (interp_dims,)
         end

@@ -55,46 +55,52 @@ end
 # (Bⱼ₋ₚ ₚ, Bⱼ₋ₚ₊₁ ₚ, …, Bⱼₚ, 0)
 # 
 # The trailing zero is just a convenience for the algorithm and is removed in the output
+#
+# For type stability of `ntuple` we define degree_plus_one and degree_plus_two 
+# in separate function and pass them in as `Val`s. Otherwise type stability is non-trivial.
 function get_basis_function_values(
-        itp_dim::BSplineInterpolationDimension,
+    itp_dim::BSplineInterpolationDimension{degree}, args...) where degree
+    get_basis_function_values(itp_dim, Val{degree + 1}(), Val{degree + 2}(), args...)
+end
+function get_basis_function_values(
+        itp_dim::BSplineInterpolationDimension{degree},
+        ::Val{degree_plus_one},
+        ::Val{degree_plus_two},
         t::Number,
         idx::Integer,
         derivative_order::Integer,
         multi_point_index::Nothing
-)
-    (; degree, knots_all) = itp_dim
-    T = promote_type(typeof(t), eltype(itp_dim.basis_function_eval))
-    degree_plus_1 = degree + 1
+)::NTuple{degree_plus_one,Float64} where {degree, degree_plus_one, degree_plus_two}
+    (; knots_all) = itp_dim
 
+    T = promote_type(typeof(t), eltype(itp_dim.basis_function_eval))
     if derivative_order > degree
-        return ntuple(_ -> zero(T), degree_plus_1)
+        return ntuple(_ -> zero(T), Val{degree_plus_one}())
     end
 
-    degree_plus_2 = degree + 2
-
     # Degree 0 basis function values
-    basis_function_values = ntuple(
-        k -> (k == degree_plus_1) ? one(T) : zero(T),
-        degree_plus_2
-    )
+    basis_function_values::NTuple{degree_plus_two,Float64} = ntuple(Val{degree_plus_two}()) do k
+        # Define T again inside this closure or its type is lost
+        T1 = promote_type(typeof(t), eltype(itp_dim.basis_function_eval))
+        (k == degree_plus_one) ? oneunit(T1) : zero(T1)
+    end
 
     # Higher order basis function values
     for d in 1:degree
         deriv = d > degree - derivative_order
-        basis_function_values = ntuple(
-            k -> cox_de_boor(
+        basis_function_values = ntuple(Val{degree_plus_two}()) do k
+            cox_de_boor(
                 basis_function_values, knots_all, t, idx, degree, d, k, deriv
-            ),
-            degree_plus_2
-        )
+            )
+        end
     end
 
-    basis_function_values[1:degree_plus_1]
+    return ntuple(i -> basis_function_values[i], Val{degree_plus_one}())
 end
 
 # Get the basis function values for one point in an
 # unstructured multi point evaluation (given by the scalar multi point index)
-function get_basis_function_values(
+@noinline function get_basis_function_values(
         itp_dim::BSplineInterpolationDimension,
         t::Number,
         idx::Integer,
@@ -172,7 +178,7 @@ function Base.getindex(bfv::BasisFunctionVector, j)
 end
 
 function get_n_basis_functions(itp_dim::BSplineInterpolationDimension)
-    length(itp_dim.knots_all) - itp_dim.degree - 1
+    length(itp_dim.knots_all) - degree(itp_dim) - 1
 end
 
 """
